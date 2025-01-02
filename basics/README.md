@@ -614,8 +614,6 @@ Runes:
 - `byte` iteration shows the **UTF-8 byte sequence** of each character.
 - `rune` iteration decodes the **Unicode code points**, treating multibyte characters (like 😊) correctly.
 
----
-
 ### 🛠️ **4. Differences Between `byte` and `rune`**
 
 | **Aspect**     | **byte** (`uint8`)      | **rune** (`int32`)       |
@@ -625,20 +623,120 @@ Runes:
 | **Represents** | ASCII character         | Unicode code point       |
 | **Common Use** | Binary data, ASCII text | Multilingual text, UTF-8 |
 
----
-
 ### 🧠 **5. When to Use `byte` vs `rune`?**
 
 - ✅ **Use `byte`**: When dealing with **raw bytes** or **ASCII text**.
 - ✅ **Use `rune`**: When dealing with **Unicode characters** or **multilingual text**.
-
----
 
 ### 🔑 **6. Key Takeaways**
 
 1. ✅ `byte` is an alias for `uint8` — for raw bytes and ASCII text.
 2. ✅ `rune` is an alias for `int32` — for Unicode code points and multilingual text.
 3. ✅ Strings in Go are UTF-8 encoded, and iterating them as `byte` or `rune` produces different results.
+
+---
+
+# **Understanding defer**
+
+In **Go**, the `defer` statement is used to **postpone the execution of a function until the surrounding function returns**. This is particularly useful for **cleaning up resources**, **closing files**, **unlocking mutexes**, or **handling any finalization logic**.
+
+- `defer` ensures that a function call is **executed just before the surrounding function exits**, regardless of whether it exits **normally** or **via a panic**.
+- Deferred calls are **executed in LIFO (Last In, First Out) order**.
+
+### **Basic Example:**
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    defer fmt.Println("This will print last")
+    fmt.Println("This will print first")
+}
+```
+
+**Output:**
+
+```
+This will print first
+This will print last
+```
+
+- `fmt.Println("This will print last")` is deferred and executed only when `main` is about to exit.
+
+## **2. Multiple `defer` Statements (LIFO Order)**
+
+Deferred functions are **stacked**, meaning they are executed in **reverse order** of their declaration.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    defer fmt.Println("Deferred 1")
+    defer fmt.Println("Deferred 2")
+    defer fmt.Println("Deferred 3")
+    fmt.Println("Normal Execution")
+}
+```
+
+**Output:**
+
+```
+Normal Execution
+Deferred 3
+Deferred 2
+Deferred 1
+```
+
+- The **last defer statement (`Deferred 3`) is executed first**.
+
+## **3. Practical Use Cases of `defer`**
+
+### **a. Closing a File**
+
+When working with files, `defer` ensures the file is closed even if an error occurs.
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+)
+
+func main() {
+    file, err := os.Open("file.txt")
+	if err != nil {
+		panic("error while reading the file")
+	}
+	defer file.Close()
+	data := make([]byte, 4096)
+	for {
+		n, err := file.Read(data)
+		if errors.Is(err, io.EOF) {
+			fmt.Println("Reached EOF")
+			break
+		}
+		if n > 0 {
+			fmt.Println(string(data[:n]))
+		}
+	}
+}
+```
+
+## **4. Common Pitfalls 🚦**
+
+1. **Deferred functions are not always executed in Goroutines.**  
+   Deferred functions run when the **function exits**, not when a Goroutine exits.
+
+2. **Heavy operations in `defer`.**  
+   Avoid putting performance-intensive tasks inside `defer`.
+
+3. **Order of execution.**  
+   Always remember that deferred functions follow **LIFO order**.
 
 ---
 
