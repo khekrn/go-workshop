@@ -308,3 +308,291 @@ func main() {
 ```
 
 ---
+
+### **9. context package**
+
+#### **What is `context`?**
+
+The `context` package allows you to:
+
+- Set timeouts and deadlines for operations.
+- Cancel operations when they are no longer needed.
+- Pass request-scoped values through function calls.
+
+#### **Core Functions and Types**
+
+1. **`context.Context`**: The base interface representing a context.
+
+   - Provides methods like `Done()`, `Err()`, `Deadline()`, and `Value()`.
+
+2. **Common Functions:**
+   - `context.Background()`: Returns an empty, default context. Typically used as the top-level context.
+   - `context.TODO()`: Used as a placeholder when the context is required but not yet available.
+   - `context.WithCancel(parent Context)`: Creates a derived context that can be manually canceled.
+   - `context.WithTimeout(parent Context, timeout time.Duration)`: Creates a derived context with a timeout.
+   - `context.WithDeadline(parent Context, deadline time.Time)`: Creates a derived context with an absolute deadline.
+   - `context.WithValue(parent Context, key, value interface{})`: Creates a context with a key-value pair.
+
+---
+
+### **2. Using Context for Timeouts**
+
+**Example: Context with Timeout**
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+)
+
+func worker(ctx context.Context) {
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Println("Worker stopped: ", ctx.Err())
+            return
+        default:
+            fmt.Println("Working...")
+            time.Sleep(500 * time.Millisecond)
+        }
+    }
+}
+
+func main() {
+    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+    defer cancel()
+
+    go worker(ctx)
+    time.Sleep(3 * time.Second)
+    fmt.Println("Main finished")
+}
+```
+
+**Output:**
+
+```
+Working...
+Working...
+Worker stopped: context deadline exceeded
+Main finished
+```
+
+---
+
+### **3. Manual Cancellation**
+
+#### **Example: Manual Context Cancellation**
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+)
+
+func worker(ctx context.Context) {
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Println("Worker stopped")
+            return
+        default:
+            fmt.Println("Working...")
+            time.Sleep(500 * time.Millisecond)
+        }
+    }
+}
+
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+
+    go worker(ctx)
+
+    time.Sleep(2 * time.Second)
+    fmt.Println("Cancelling context...")
+    cancel()
+
+    time.Sleep(1 * time.Second)
+    fmt.Println("Main finished")
+}
+```
+
+**Output:**
+
+```
+Working...
+Working...
+Working...
+Cancelling context...
+Worker stopped
+Main finished
+```
+
+---
+
+### **4. Passing Values with Context**
+
+#### **Example: Context with Values**
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+)
+
+func worker(ctx context.Context) {
+    userID := ctx.Value("userID")
+    fmt.Printf("Processing userID: %v\n", userID)
+}
+
+func main() {
+    ctx := context.WithValue(context.Background(), "userID", 42)
+
+    worker(ctx)
+}
+```
+
+**Output:**
+
+```
+Processing userID: 42
+```
+
+**Note:** The `WithValue` function is not type-safe and should be used sparingly. Prefer struct-based contexts for complex data.
+
+---
+
+### **5. Combining Deadlines and Values**
+
+#### **Example: Context with Deadline and Value**
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+)
+
+func worker(ctx context.Context) {
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Println("Worker stopped: ", ctx.Err())
+            return
+        default:
+            userID := ctx.Value("userID")
+            fmt.Printf("Processing userID: %v\n", userID)
+            time.Sleep(500 * time.Millisecond)
+        }
+    }
+}
+
+func main() {
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    ctx = context.WithValue(ctx, "userID", 42)
+    go worker(ctx)
+
+    time.Sleep(4 * time.Second)
+    fmt.Println("Main finished")
+}
+```
+
+**Output:**
+
+```
+Processing userID: 42
+Processing userID: 42
+Processing userID: 42
+Worker stopped: context deadline exceeded
+Main finished
+```
+
+---
+
+### **6. Best Practices**
+
+- Always call `cancel()` for `WithCancel`, `WithTimeout`, or `WithDeadline` contexts to release resources.
+- Use `context.Background()` or `context.TODO()` as top-level contexts.
+- Avoid storing large data in `context` values.
+- Use context to propagate deadlines, cancellations, and small pieces of scoped information.
+- Avoid passing `nil` as context.
+
+---
+
+### **7. Advanced Patterns**
+
+#### **Using Context for Graceful Shutdown**
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+)
+
+func worker(ctx context.Context) {
+    for {
+        select {
+        case <-ctx.Done():
+            fmt.Println("Worker stopped")
+            return
+        default:
+            fmt.Println("Working...")
+            time.Sleep(1 * time.Second)
+        }
+    }
+}
+
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    go worker(ctx)
+
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+    <-sigs
+    fmt.Println("Received shutdown signal")
+    cancel()
+
+    time.Sleep(2 * time.Second)
+    fmt.Println("Main finished")
+}
+```
+
+#### **Output:**
+
+```
+Working...
+Working...
+Received shutdown signal
+Worker stopped
+Main finished
+```
+
+---
+
+### Further Resources
+
+- [Scheduling In Go : Part I - OS Scheduler](https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html)
+- [Scheduling In Go : Part II - Go Scheduler](https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part2.html)
+- [Scheduling In Go : Part III - Concurrency](https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html)
+- [Concurrency Patterns](https://www.youtube.com/watch?v=f6kdp27TYZs)
+- [Advanced Concurrency Patterns](https://www.youtube.com/watch?v=QDDwwePbDtw)
