@@ -315,6 +315,7 @@ func main() {
 
 The `context` package allows you to:
 
+- Provides a mechanism to control the lifecycle, cancellation, and propagation of requests across multiple goroutines
 - Set timeouts and deadlines for operations.
 - Cancel operations when they are no longer needed.
 - Pass request-scoped values through function calls.
@@ -436,8 +437,6 @@ Main finished
 ---
 
 ### **4. Passing Values with Context**
-
-#### **Example: Context with Values**
 
 ```go
 package main

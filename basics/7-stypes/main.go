@@ -20,6 +20,7 @@ func runeSnippet() {
 }
 
 func stringRep() {
+	// string is a read only bytes slice
 	str := "Go😊"
 
 	// Iterate as bytes

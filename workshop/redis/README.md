@@ -725,3 +725,9 @@ Server processes the commands and responds:
 ## Conclusion
 
 RESP is a powerful, flexible, and efficient protocol that forms the backbone of Redis communication. By understanding its data types and structure, developers can optimize interactions with Redis and fully leverage its capabilities.
+
+## References
+
+- [RESP Internals](https://outcomeschool.com/blog/resp-redis-serialization-protocol)
+- [Building Redis and RESP](https://www.build-redis-from-scratch.dev/en/resp-reader)
+- [Simple Redis Server in Go](https://www.joshuapare.com/posts/writing-redis-in-go/)
