@@ -7,6 +7,7 @@ func main() {
 	byteSnippet()
 	fmt.Println("Demystifying Rune")
 	runeSnippet()
+	stringRep()
 }
 
 func byteSnippet() {
@@ -20,7 +21,9 @@ func runeSnippet() {
 }
 
 func stringRep() {
+	// string is a read only bytes slice
 	str := "Go😊"
+	// []byte
 
 	// Iterate as bytes
 	fmt.Println("Bytes:")

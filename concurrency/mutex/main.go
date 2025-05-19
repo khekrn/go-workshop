@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 type SafeCounter struct {
@@ -12,15 +13,16 @@ type SafeCounter struct {
 
 func (sc *SafeCounter) Increment() {
 	sc.mu.Lock()
+	defer sc.mu.Unlock()
 	sc.value++
-	sc.mu.Unlock()
+	time.Sleep(100 * time.Millisecond)
 }
 
 func main() {
 	sc := SafeCounter{}
 	var wg sync.WaitGroup
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			sc.Increment()
